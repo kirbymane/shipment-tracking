@@ -72,7 +72,19 @@ class ShipmentController extends Controller
                 'data' => $trackingData,
             ]);
         } catch (Throwable $e) {
-            Log::error("Error tracking shipment {$trackingNumber}: " . $e->getMessage());
+            Log::error("Error tracking shipment $trackingNumber: " . $e->getMessage());
+
+            $shipment = Shipment::where('tracking_number', $trackingNumber)->first();
+
+            if ($shipment) {
+                return response()->json([
+                    'tracking_number' => $trackingNumber,
+                    'status' => $shipment->current_status,
+                    'message' => 'Using last known status from local storage.',
+                    'data' => $shipment->payload,
+                ]);
+            }
+
             return response()->json(['error' => 'Service unavailable'], 503);
         }
     }

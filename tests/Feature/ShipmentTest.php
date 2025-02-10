@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\LostShipmentNotification;
+use App\Models\Shipment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -19,7 +20,7 @@ class ShipmentTest extends TestCase
             'https://api.goshippo.com/tracks/*' => Http::response([
                 'tracking_number' => 'TEST123',
                 'tracking_status' => ['status' => 'In Transit'],
-            ], 200),
+            ]),
         ]);
 
         $response = $this->getJson('/api/shipments/TEST123');
@@ -58,7 +59,7 @@ class ShipmentTest extends TestCase
             'https://api.goshippo.com/tracks/*' => Http::response([
                 'tracking_number' => 'TEST123',
                 'tracking_status' => ['status' => 'In Transit'],
-            ], 200),
+            ]),
         ]);
 
         $this->getJson('/api/shipments/TEST123');
@@ -74,7 +75,7 @@ class ShipmentTest extends TestCase
             'https://api.goshippo.com/tracks/*' => Http::response([
                 'tracking_number' => 'TEST123',
                 'tracking_status' => ['status' => 'Lost'],
-            ], 200),
+            ]),
         ]);
 
         $this->getJson('/api/shipments/TEST123');
@@ -82,5 +83,39 @@ class ShipmentTest extends TestCase
         Mail::assertSent(LostShipmentNotification::class, function ($mail) {
             return $mail->hasTo('customer@example.com');
         });
+    }
+
+    #[Test] public function it_returns_latest_persisted_data_if_tracking_service_fails()
+    {
+        Shipment::create([
+            'tracking_number' => 'FAILED123',
+            'current_status' => 'In Transit',
+            'payload' => ['tracking_status' => ['status' => 'In Transit']],
+        ]);
+
+        Http::fake([
+            'https://api.goshippo.com/tracks/*' => Http::response([], 500),
+        ]);
+
+        $response = $this->getJson('/api/shipments/FAILED123');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'tracking_number' => 'FAILED123',
+                'status' => 'In Transit',
+                'message' => 'Using last known status from local storage.',
+            ]);
+    }
+
+    #[Test] public function it_returns_service_unavailable_if_no_persisted_data_exists()
+    {
+        Http::fake([
+            'https://api.goshippo.com/tracks/*' => Http::response([], 500),
+        ]);
+
+        $response = $this->getJson('/api/shipments/NONEXISTENT');
+
+        $response->assertStatus(503)
+            ->assertJson(['error' => 'Service unavailable']);
     }
 }

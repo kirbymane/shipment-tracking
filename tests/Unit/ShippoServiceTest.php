@@ -17,7 +17,7 @@ class ShippoServiceTest extends TestCase
             'https://api.goshippo.com/tracks/' => Http::response([
                 'tracking_number' => 'VALID123',
                 'tracking_status' => ['status' => 'In Transit'],
-            ], 200),
+            ]),
         ]);
 
         $service = new ShippoService();
