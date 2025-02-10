@@ -1,66 +1,138 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Shipment Tracking Service
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 📌 Overview
 
-## About Laravel
+This is a Laravel-based shipment tracking service that integrates with Shippo's API. It provides:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- A REST API to fetch shipment tracking details.
+- Persistence of tracking data in a database.
+- Logging of shipment events.
+- Email notifications for lost shipments.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **GET /api/shipments/{tracking_number}**: Retrieves the shipment status from Shippo.
+- **Webhook Listener (/api/webhooks/shippo)**: Receives real-time tracking updates from Shippo (TODO: verify the
+  signature).
+- **Error Handling**: Uses locally stored shipment data if Shippo is unavailable.
+- **Email Notification**: Sends an email when a shipment is marked as "Lost".
 
-## Learning Laravel
+## ⚙️ Setup Instructions
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1️⃣ Install Dependencies
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Ensure you have **PHP 8.1+**, **Composer**, and **MySQL/PostgreSQL** installed.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```sh
+composer install
+```
 
-## Laravel Sponsors
+### 2️⃣ Configure Environment
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Copy the `.env.example` file and update your database and Shippo credentials:
 
-### Premium Partners
+```sh
+cp .env.example .env
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+Edit `.env` and update:
 
-## Contributing
+```ini
+SHIPPO_API_TOKEN = your_shippo_api_token
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 3️⃣ Run Migrations
 
-## Code of Conduct
+```sh
+php artisan migrate --seed
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 4️⃣ Start Docker
 
-## Security Vulnerabilities
+```sh
+docker-compose up -d
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 5️⃣ Start the Server
 
-## License
+```sh
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The API will be available at `http://127.0.0.1:8000`.
+
+## 🛠 Usage
+
+### ✅ **Track a Shipment**
+
+```sh
+GET /api/shipments/{tracking_number}
+```
+
+#### 📥 **Example Response**:
+
+```json
+{
+    "tracking_number": "SHIP12345",
+    "status": "In Transit",
+    "message": "Tracking details fetched successfully",
+    "data": {
+        ...
+    }
+}
+```
+
+### ✅ **Receive Webhook Events from Shippo**
+
+Set up Shippo to send webhooks to:
+
+```
+POST /api/webhooks/shippo
+```
+
+Example Payload:
+
+```json
+{
+    "event": "track_updated",
+    "data": {
+        "tracking_number": "SHIP12345",
+        "tracking_status": {
+            "status": "Delivered"
+        }
+    }
+}
+```
+
+## 🧪 Running Tests
+
+### ✅ Run All Tests
+
+```sh
+php artisan test
+```
+
+## 🛠 Implementation Details
+
+### 📌 Key Components:
+
+1. **Controllers:**
+    - `ShipmentController.php`: Fetches tracking data from Shippo and updates the database.
+    - `ShipmentWebhookController.php`: Processes webhook updates.
+2. **Services:**
+    - `ShippoService.php`: Handles API calls to Shippo.
+    - `ShipmentService.php`: Handles business logic like mapping statuses.
+3. **Models:**
+    - `Shipment.php`: Stores shipment details.
+    - `ShipmentEvent.php`: Logs shipment events.
+4. **Notifications:**
+    - `LostShipmentNotification.php`: Sends an email when a shipment is lost.
+
+## 📌 Assumptions
+
+1. **A Shippo API Token is required** to make tracking requests.
+2. **Lost shipments trigger an email notification** to the customer.
+3. **If the Shippo API is unavailable,** the service returns the latest known tracking status.
+4. **No authentication is required** for the API endpoints.
+5. **Webhook requests are assumed to be from Shippo** (signature verification should be added in production).
+
