@@ -65,7 +65,7 @@ class ShipmentWebhookController extends Controller
             Mail::to('customer@example.com')->send(new LostShipmentNotification($payload['data']));
         }
 
-        Log::info("Received Shippo webhook for tracking number {$trackingNumber} with status {$mappedStatus}");
+        Log::info("Received Shippo webhook for tracking number $trackingNumber with status $mappedStatus");
 
         return response()->json(['success' => true]);
     }

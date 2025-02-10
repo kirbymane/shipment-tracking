@@ -51,7 +51,8 @@ class ShippoService
 
             return $response->json();
         } catch (Exception $e) {
-            Log::error("Shippo API error for tracking number {$trackingNumber}: " . $e->getMessage());
+            Log::error("Shippo API error for tracking number $trackingNumber: " . $e->getMessage());
+
             throw new Exception("Tracking service unavailable.");
         }
     }
